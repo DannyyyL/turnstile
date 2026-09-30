@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101114">
+  <meta name="description" content="Turnstile: an experimental workspace for forward and backward agent reasoning.">
+  <title>Turnstile — Temporal reasoning lab</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23131518'/%3E%3Cpath d='M9 8h14v4H13v5h10v4H9z' fill='%23b9f36b'/%3E%3Cpath d='M19 21v5h4V17h-4' fill='%23b9f36b'/%3E%3C/svg%3E">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#experiment" aria-label="Turnstile home"><span class="brand-symbol" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M5 5h22v5H10v8h17v5H5z"/><path d="M22 18v10h5V13h-5"/></svg></span><span>turnstile<span class="brand-period">.</span></span></a>
+      <div class="workspace-label">TEMPORAL REASONING LAB <span>v0.1</span></div>
+      <nav aria-label="Workspace">
+        <button class="nav-item active" data-view="experiment"><span data-icon="experiment"></span>Experiment<span class="nav-key">01</span></button>
+        <button class="nav-item" data-view="trajectories"><span data-icon="trajectory"></span>Trajectories<span class="nav-key">02</span></button>
+        <button class="nav-item" data-view="comparison"><span data-icon="compare"></span>Comparison<span class="nav-key">03</span></button>
+        <button class="nav-item" data-view="protocol"><span data-icon="book"></span>Protocol<span class="nav-key">04</span></button>
+      </nav>
+      <div class="sidebar-note"><span class="note-kicker">THE EXPERIMENT</span><p>What could an earlier agent learn from a later outcome?</p><div class="mini-directions"><span>t₀</span><div><i></i><i></i><i></i><i></i><i></i></div><span>tₙ</span></div></div>
+      <div class="sidebar-footer"><span data-icon="flask"></span><span>Local research workspace<br><small>Reproducible by seed</small></span></div>
+    </aside>
+    <div class="main-shell">
+      <header class="topbar"><div class="breadcrumbs">Workspace <span>/</span> <strong id="breadcrumb-view">Experiment</strong></div><div class="runtime-badge"><span class="runtime-dot"></span><span id="runtime-label">Reference policies</span><span class="badge-divider"></span>LOCAL</div></header>
+      <main id="main-content">
+        <section class="page-heading"><div><div class="eyebrow">FORWARD × BACKWARD</div><h1 id="page-title">A future worth revisiting.</h1><p id="page-description">Trace a release failure back to the decision that made it possible.</p></div><button class="button primary" id="run-button"><span data-icon="play"></span><span>Run experiment</span></button></section>
+        <div class="experiment-controls" id="experiment-controls">
+          <label class="control scenario-control"><span>ENVIRONMENT</span><select id="scenario-select" aria-label="Environment"><option value="webhook_release">Webhook release</option><option value="database_migration">Database migration</option></select></label>
+          <label class="control seed-control"><span>SEED</span><input id="seed-input" type="number" value="42" min="0" max="2147483647" step="1" aria-label="Experiment seed"></label>
+          <label class="control"><span>ATTEMPTS</span><select id="attempts-select" aria-label="Attempts"><option value="2">2 attempts</option><option value="3">3 attempts</option><option value="1">1 attempt</option></select></label>
+          <label class="control policy-control"><span>AGENT POLICY</span><select id="policy-select" aria-label="Agent policy"><option value="reference">Reference policy</option><option value="model" disabled>Live model · key required</option></select></label>
+          <button class="button subtle icon-button" id="export-button" title="Export experiment as JSON" aria-label="Export experiment as JSON" disabled><span data-icon="download"></span></button>
+        </div>
+        <div id="view-content" aria-live="polite"><div class="initial-state"><div class="loading-orbit"></div><h2>Preparing the experiment</h2><p>Building three trajectories from the same initial state.</p></div></div>
+        <footer class="page-footer"><span>TURNSTILE <span class="footer-slash">/</span> EXPERIMENTAL FRAMEWORK</span><span id="footer-policy">Simulated tools. Reproducible decisions. Observable evidence.</span></footer>
+      </main>
+    </div>
+  </div>
+  <div id="toast" class="toast" role="status"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
