@@ -1,0 +1,76 @@
+{
+  "task": "coupled_feedback",
+  "seed": 42,
+  "pairIds": [
+    3,
+    6
+  ],
+  "condition": "infer",
+  "description": "The same reasoning models forecast two timers that can expire, signal each other after a delay, and start again. Each fresh schedule has 20 external events.",
+  "reference": {
+    "forecastsCorrect": 24,
+    "pairedCorrect": 10
+  },
+  "baseline": {
+    "label": "Always guessing “both finished”",
+    "forecastsCorrect": 3,
+    "pairedCorrect": 0
+  },
+  "models": [
+    {
+      "label": "GPT-6.1 Terra",
+      "modelId": "openai/gpt-6.1-terra",
+      "reasoningEffort": "medium",
+      "forecastsTotal": 24,
+      "pairedTotal": 10,
+      "forecastsCorrect": 24,
+      "pairedCorrect": 10,
+      "reportHashes": [
+        "d35a8c687f3f06469138dd373d1b592db1ce7923aeaf24e7e9370281c0fa96dc"
+      ],
+      "responseCaps": {
+        "3a": 5000,
+        "3b": 5000,
+        "6a": 5000,
+        "6b": 5000
+      }
+    },
+    {
+      "label": "Gemini 3.8 Flash",
+      "modelId": "google/gemini-3.8-flash",
+      "reasoningEffort": "medium",
+      "forecastsTotal": 24,
+      "pairedTotal": 10,
+      "forecastsCorrect": 19,
+      "pairedCorrect": 6,
+      "reportHashes": [
+        "0c051137bc61226cc0d44bc08b839d95b3fa43f33950d33fe7a3e048d878a038",
+        "2a0e70284c3ffc6b9911e9675d3516c2268e2d026b88b756ceed84f128d6e2b6"
+      ],
+      "responseCaps": {
+        "3a": 5000,
+        "3b": 5000,
+        "6a": 12000,
+        "6b": 5000
+      }
+    },
+    {
+      "label": "GPT-6 Luna",
+      "modelId": "openai/gpt-6-luna",
+      "reasoningEffort": "medium",
+      "forecastsTotal": 24,
+      "pairedTotal": 10,
+      "forecastsCorrect": 17,
+      "pairedCorrect": 6,
+      "reportHashes": [
+        "dd82bae00fdd0a05833a4a9608b11581e37a836a0f3d7493ea7e08474c2d62f7"
+      ],
+      "responseCaps": {
+        "3a": 12000,
+        "3b": 12000,
+        "6a": 12000,
+        "6b": 12000
+      }
+    }
+  ]
+}

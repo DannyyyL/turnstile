@@ -11,6 +11,56 @@ const mockResult = (value, usage = {}) => ({
   ] }),
 });
 
+test('browser benchmark metadata exposes safe models, configuration status and limits', (t) => {
+  const keys = ['OPENAI_API_KEY', 'TURNSTILE_BASE_URL', 'TURNSTILE_MODEL', 'TURNSTILE_API_KEY'];
+  const previous = Object.fromEntries(keys.map(key => [key, process.env[key]]));
+  t.after(() => { for (const key of keys) { if (previous[key] === undefined) delete process.env[key]; else process.env[key] = previous[key]; } });
+  for (const key of keys) delete process.env[key];
+  const empty = config().benchmark;
+  assert.deepEqual(empty.policyKinds.map(policy => [policy.id, policy.available]), [['reference', true], ['openai', false], ['compatible', false]]);
+  assert.deepEqual(empty.tasks.map(task => task.id), ['delayed_commit', 'temporal_history', 'temporal_revision']);
+  assert.equal(empty.legacyTasks.length, 6);
+  assert.equal(empty.strategies.length, 4);
+  assert.equal(empty.version, '0.5.0');
+  assert.equal(empty.schemaVersion, 4);
+  assert.deepEqual(empty.suites, ['dynamics', 'temporal', 'legacy']);
+  assert.equal(empty.defaultSuite, 'dynamics');
+  assert.deepEqual(empty.ruleAccessModes, ['infer', 'given']);
+  assert.deepEqual(empty.variants, ['base', 'temporal_shift']);
+  assert.deepEqual(empty.limits, { attempts: 5, referenceSeeds: 50, modelSeeds: 3, delay: 7, analysisBudget: 100, interference: 3 });
+  assert.equal(empty.automaticSingletonActions, true);
+  assert.deepEqual(empty.splits, ['development', 'evaluation', 'all']);
+  process.env.OPENAI_API_KEY = 'private-openai-key';
+  process.env.TURNSTILE_BASE_URL = 'https://private-endpoint.example/v1';
+  process.env.TURNSTILE_MODEL = 'local/model:quant';
+  process.env.TURNSTILE_API_KEY = 'private-compatible-key';
+  const configured = config().benchmark;
+  assert.ok(configured.policyKinds.every(policy => policy.available));
+  assert.equal(configured.policyKinds.find(policy => policy.id === 'compatible').model, 'local/model:quant');
+  const serialized = JSON.stringify(config());
+  for (const privateValue of ['private-openai-key', 'private-compatible-key', 'private-endpoint.example']) assert.ok(!serialized.includes(privateValue));
+  process.env.TURNSTILE_MODEL = 'https://private-endpoint.example/v1';
+  assert.equal(config().benchmark.policyKinds.find(policy => policy.id === 'compatible').model, null);
+});
+
+test('browser benchmark requests validate task families, strategy selection and model seed limits', () => {
+  const defaults = validateOptions({}, 'evaluate');
+  assert.equal(defaults.suite, 'dynamics');
+  assert.equal(defaults.variant, 'base');
+  assert.equal(defaults.attempts, 1);
+  assert.deepEqual(defaults.strategies, ['forward_only']);
+  const selected = validateOptions({ suite: 'temporal', family: 'temporal_state_tracking', strategies: ['trace_memory', 'temporal_pincer'], variant: 'temporal_shift' }, 'evaluate');
+  assert.deepEqual(selected.strategies, ['trace_memory', 'temporal_pincer']);
+  assert.equal(selected.variant, 'temporal_shift');
+  assert.equal(selected.policyKind, 'reference');
+  const legacy = validateOptions({ taskId: 'state_ledger' }, 'evaluate');
+  assert.equal(legacy.suite, 'legacy');
+  assert.equal(legacy.attempts, 2);
+  assert.equal(legacy.strategies.length, 4);
+  assert.equal(validateOptions({ suite: 'legacy', family: 'delayed_consequences', delay: 0 }, 'evaluate').delay, 0);
+  for (const invalid of [{ taskId: 'missing' }, { family: 'missing' }, { suite: 'missing' }, { variant: 'missing' }, { suite: 'temporal', taskId: 'state_ledger' }, { suite: 'legacy', variant: 'temporal_shift' }, { family: 'delayed_consequences' }, { strategies: [] }, { strategies: ['reflection', 'reflection'] }, { policyKind: 'compatible', seedCount: 4 }, { delay: 8 }, { apiKey: 'private' }]) assert.throws(() => validateOptions(invalid, 'evaluate'));
+});
+
 test('input limits reject cost surprises and invalid experiment choices', () => {
   assert.equal(validateOptions({}, 'run').mode, 'temporal_pincer');
   assert.equal(validateOptions({ mode: 'pincer' }, 'run').mode, 'temporal_pincer');
@@ -24,12 +74,17 @@ test('input limits reject cost surprises and invalid experiment choices', () => 
 });
 
 test('CLI translates paired batch options without silently dropping invalid flags', () => {
+  assert.deepEqual(parseArgs([]), { operation: 'evaluate', options: {}, output: undefined });
   assert.deepEqual(parseArgs(['compare', '--seed', '42', '--attempts', '2', '--seeds', '10', '--output', 'result.json']), {
     operation: 'benchmark', options: { seed: 42, attempts: 2, seedCount: 10 }, output: 'result.json',
   });
   assert.throws(() => parseArgs(['run', '--seeds', '2']), /--seeds/);
   assert.throws(() => parseArgs(['compare', '--seed', '42', '--seed', '43']), /more than once/);
   assert.throws(() => parseArgs(['compare', '--policy']), /requires a value/);
+  assert.deepEqual(parseArgs(['validate', '--split', 'evaluation', '--seeds', '2']).options, { split: 'evaluation', seedCount: 2 });
+  assert.deepEqual(parseArgs(['evaluate', '--suite', 'temporal', '--variant', 'temporal_shift']).options, { suite: 'temporal', variant: 'temporal_shift' });
+  assert.deepEqual(parseArgs(['validate', '--suite', 'legacy']).options, { suite: 'legacy' });
+  assert.throws(() => validateOptions({ taskId: 'state_ledger' }, 'validate'), /Unknown validation option/);
 });
 
 test('model adapter uses only available actions and parses output beyond reasoning items', async () => {
@@ -93,12 +148,39 @@ test('localhost API rejects foreign origins, oversized bodies and server-source 
   const base = `http://127.0.0.1:${server.address().port}`;
   const settings = await (await fetch(`${base}/api/config`)).json();
   assert.equal(settings.name, 'Turnstile');
+  assert.equal(settings.benchmark.endpoint, '/api/evaluate');
+  assert.equal(settings.benchmark.policyKinds.length, 3);
+  const home = await fetch(`${base}/`);
+  assert.equal(home.status, 200);
+  assert.match(await home.text(), /href="\/workbench\.html"/);
+  const workbench = await fetch(`${base}/workbench.html`);
+  assert.equal(workbench.status, 200);
+  assert.match(await workbench.text(), /id="benchmark-form"/);
+  const pilotScores = await fetch(`${base}/pilot-scores.json`);
+  assert.equal(pilotScores.status, 200);
+  assert.match(pilotScores.headers.get('content-type'), /application\/json/);
+  const { models } = await pilotScores.json();
+  assert.ok(models.length >= 10);
+  assert.equal(new Set(models.map(model => model.modelId)).size, models.length);
+  assert.ok(models.every(model => model.forecastsTotal === 24 && model.pairedTotal === 11
+    && Number.isInteger(model.forecastsCorrect) && model.forecastsCorrect >= 0 && model.forecastsCorrect <= model.forecastsTotal
+    && Number.isInteger(model.pairedCorrect) && model.pairedCorrect >= 0 && model.pairedCorrect <= model.pairedTotal));
+  const demo = await fetch(`${base}/demo.html`);
+  assert.equal(demo.status, 200);
+  assert.match(await demo.text(), /id="run-button"/);
+  for (const asset of ['landing.js', 'landing.css', 'benchmark-app.js', 'benchmark-view.js', 'benchmark.css']) {
+    const response = await fetch(`${base}/${asset}`);
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get('content-type'), asset.endsWith('.css') ? /text\/css/ : /text\/javascript/);
+  }
   assert.ok(!Object.hasOwn(settings, 'apiKey'));
   assert.ok(config().scenarios.length > 0);
   const source = await fetch(`${base}/model.mjs`);
   assert.equal(source.status, 404);
   const foreign = await fetch(`${base}/api/compare`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://untrusted.example' }, body: '{}' });
   assert.equal(foreign.status, 403);
+  const foreignBenchmark = await fetch(`${base}/api/evaluate`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://untrusted.example' }, body: '{}' });
+  assert.equal(foreignBenchmark.status, 403);
   const malformed = await fetch(`${base}/api/compare`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{' });
   assert.equal(malformed.status, 400);
   const oversized = await fetch(`${base}/api/compare`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ padding: 'x'.repeat(17000) }) });
@@ -109,4 +191,55 @@ test('localhost API rejects foreign origins, oversized bodies and server-source 
   assert.equal(comparison.runs.length, 3);
   assert.equal(comparison.comparisonProtocol.sharedFirstAttempt, true);
   assert.deepEqual(comparison.runs.map(run => run.metrics.success), [false, true, true]);
+  const core = await fetch(`${base}/api/evaluate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+  assert.equal(core.status, 200);
+  const coreReport = await core.json();
+  assert.equal(coreReport.schemaVersion, 4);
+  assert.equal(coreReport.benchmarkVersion, '0.5.0');
+  assert.equal(coreReport.options.suite, 'dynamics');
+  assert.equal(coreReport.options.attempts, 1);
+  assert.deepEqual(coreReport.options.strategies, ['forward_only']);
+  assert.deepEqual(coreReport.cases.map(item => item.taskId), ['delayed_commit']);
+  assert.equal(coreReport.cases[0].runs[0].attempts.length, 1);
+  assert.equal(coreReport.costs.physicalPolicyDecisions, 6);
+  assert.equal(coreReport.costs.physicalAutomaticActions, 3);
+  assert.equal(coreReport.cases[0].runs[0].metrics.firstAttemptScore, 1);
+  const shifted = await fetch(`${base}/api/evaluate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ suite: 'temporal', variant: 'temporal_shift', split: 'all' }) });
+  assert.equal(shifted.status, 200);
+  const shiftedReport = await shifted.json();
+  assert.equal(shiftedReport.options.variant, 'temporal_shift');
+  assert.deepEqual(shiftedReport.cases.map(item => item.taskId), ['temporal_history', 'temporal_revision']);
+  const benchmark = await fetch(`${base}/api/evaluate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ taskId: 'state_access', attempts: 1 }) });
+  assert.equal(benchmark.status, 200);
+  const report = await benchmark.json();
+  assert.equal(report.kind, 'temporal_benchmark');
+  assert.equal(report.options.suite, 'legacy');
+  assert.equal(report.cases[0].runs.length, 4);
+  assert.equal(report.costs.physicalForwardActions, 14);
+  const delayed = await fetch(`${base}/api/evaluate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ suite: 'legacy', family: 'delayed_consequences', strategies: ['reflection', 'temporal_pincer'], attempts: 2, delay: 0 }) });
+  assert.equal(delayed.status, 200);
+  const delayedReport = await delayed.json();
+  assert.equal(delayedReport.status, 'completed');
+  assert.equal(delayedReport.cases.length, 2);
+  assert.ok(delayedReport.cases.every(item => item.family === 'delayed_consequences' && item.runs.length === 2));
+  assert.equal(delayedReport.costs.modelUsage, null);
+  const validation = await fetch(`${base}/api/validate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seedCount: 1, attempts: 1 }) });
+  assert.equal(validation.status, 200);
+  const controls = await validation.json();
+  assert.equal(controls.kind, 'temporal_validation');
+  assert.equal(controls.schemaVersion, 3);
+  assert.equal(controls.options.suite, 'dynamics');
+  assert.equal(controls.conditions.length, 4);
+  assert.equal(controls.status, 'completed');
+  assert.equal(controls.costs.physicalPolicyDecisions, 24);
+  const legacyValidation = await fetch(`${base}/api/validate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ suite: 'legacy', seedCount: 1, attempts: 1, strategies: ['forward_only'] }) });
+  assert.equal(legacyValidation.status, 200);
+  const legacyControls = await legacyValidation.json();
+  assert.equal(legacyControls.conditions.length, 8);
+  assert.equal(legacyControls.status, 'completed');
+  assert.equal(legacyControls.costs.physicalPolicyDecisions, 28);
+  for (const file of ['model-client.mjs', 'benchmark/tasks.mjs', 'benchmark/index.mjs']) assert.equal((await fetch(`${base}/${file}`)).status, 404);
+  const untrustedEndpoint = await fetch(`${base}/api/evaluate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ baseURL: 'http://untrusted.example/v1' }) });
+  assert.equal(untrustedEndpoint.status, 400);
+  assert.throws(() => validateOptions({ policyKind: 'custom' }, 'evaluate'), /JavaScript/);
 });

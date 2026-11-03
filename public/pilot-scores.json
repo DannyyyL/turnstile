@@ -1,0 +1,140 @@
+{
+  "task": "coupled_commit",
+  "seed": 42,
+  "pairIds": [
+    1,
+    5
+  ],
+  "condition": "infer",
+  "models": [
+    {
+      "label": "Gemini 3.8 Flash",
+      "modelId": "google/gemini-3.8-flash",
+      "forecastsCorrect": 24,
+      "forecastsTotal": 24,
+      "pairedCorrect": 11,
+      "pairedTotal": 11,
+      "reasoningEffort": "medium",
+      "reportHash": "454b38aed5beda8b3096bd70006e875835c9fdcebffa7093a3ce89d423bbe24d"
+    },
+    {
+      "label": "GPT-6 Luna",
+      "modelId": "openai/gpt-6-luna",
+      "forecastsCorrect": 24,
+      "forecastsTotal": 24,
+      "pairedCorrect": 11,
+      "pairedTotal": 11,
+      "reasoningEffort": "medium",
+      "reportHash": "031ba2129ac848dac602ca84006fd6c615b761d2356a54e314e063959fa3caf6"
+    },
+    {
+      "label": "GPT-6.1 Terra",
+      "modelId": "openai/gpt-6.1-terra",
+      "forecastsCorrect": 24,
+      "forecastsTotal": 24,
+      "pairedCorrect": 11,
+      "pairedTotal": 11,
+      "reasoningEffort": "medium",
+      "reportHash": "be4d9df6ac7934409aedc1d675fcfcfb777605860f61e5eca6cc1e4537753594"
+    },
+    {
+      "label": "Gemini 2.5 Flash",
+      "modelId": "google/gemini-2.5-flash",
+      "forecastsCorrect": 8,
+      "forecastsTotal": 24,
+      "pairedCorrect": 2,
+      "pairedTotal": 11,
+      "reportHash": "1c3cb4dda734838d85353828fc08eea6830b7a41c11e76d0fa2a5159bb24fe51"
+    },
+    {
+      "label": "DeepSeek V3 (0324)",
+      "modelId": "deepseek/deepseek-chat-v3-0324",
+      "forecastsCorrect": 7,
+      "forecastsTotal": 24,
+      "pairedCorrect": 2,
+      "pairedTotal": 11,
+      "reportHash": "4c134d28333bed5140a79b7ac5c5a56b9520c5618fbb08debab2b8f49ae2a77e"
+    },
+    {
+      "label": "Claude Haiku 4.5",
+      "modelId": "anthropic/claude-haiku-4.5",
+      "forecastsCorrect": 5,
+      "forecastsTotal": 24,
+      "pairedCorrect": 0,
+      "pairedTotal": 11,
+      "reportHash": "9a181dd35febb87412543292c859c760cd4d0504975d1fe50123008a3e4ce58c"
+    },
+    {
+      "label": "Mistral NeMo",
+      "modelId": "mistralai/mistral-nemo",
+      "forecastsCorrect": 4,
+      "forecastsTotal": 24,
+      "pairedCorrect": 0,
+      "pairedTotal": 11,
+      "reportHash": "ff0c685c7d43310e5303f5953f3e89834bcb95ffca8f83438fb7d05f7ba834e7"
+    },
+    {
+      "label": "Qwen3 30B Instruct",
+      "modelId": "qwen/qwen3-30b-a3b-instruct-2507",
+      "forecastsCorrect": 4,
+      "forecastsTotal": 24,
+      "pairedCorrect": 0,
+      "pairedTotal": 11,
+      "reportHash": "05b6915995dff410536fdb05a274cb094c3c6f3dcc222fd1c85a65ce9c5885ec"
+    },
+    {
+      "label": "GPT-4.1 mini",
+      "modelId": "openai/gpt-4.1-mini",
+      "forecastsCorrect": 3,
+      "forecastsTotal": 24,
+      "pairedCorrect": 1,
+      "pairedTotal": 11,
+      "reportHash": "b026fd92e0d1fd8694e50c319c765cf70bf7871d6c53bd266c4901249716c585"
+    },
+    {
+      "label": "Llama 3.3 70B",
+      "modelId": "meta-llama/llama-3.3-70b-instruct",
+      "forecastsCorrect": 2,
+      "forecastsTotal": 24,
+      "pairedCorrect": 0,
+      "pairedTotal": 11,
+      "reportHash": "eaa33802fcbd4f05da4f7c1912dfbef00b80b89fa88e437f0f9ecb1ab6b8b70d"
+    },
+    {
+      "label": "Mistral Small 3.2",
+      "modelId": "mistralai/mistral-small-3.2-24b-instruct",
+      "forecastsCorrect": 2,
+      "forecastsTotal": 24,
+      "pairedCorrect": 0,
+      "pairedTotal": 11,
+      "reportHash": "ae887faca20edaed17f706e0d8d3090951aab77ed24179347853b558dfed4df7"
+    },
+    {
+      "label": "Nemotron 3.5 Super VL",
+      "modelId": "nvidia/nemotron-3.5-super-vl:free",
+      "forecastsCorrect": 2,
+      "forecastsTotal": 24,
+      "pairedCorrect": 0,
+      "pairedTotal": 11,
+      "reportHash": "221675912b7923c09f7f2e0e77ea094c897e8211463c71dcf226d8c033b91d7b"
+    },
+    {
+      "label": "Gemini 2.5 Flash-Lite",
+      "modelId": "google/gemini-2.5-flash-lite",
+      "forecastsCorrect": 0,
+      "forecastsTotal": 24,
+      "pairedCorrect": 0,
+      "pairedTotal": 11,
+      "reportHash": "1babe1f3ca3e7155bad1c90b81b4fb90d7c692d2482342077fc6aa552b069a91"
+    },
+    {
+      "label": "GPT-4.1 nano",
+      "modelId": "openai/gpt-4.1-nano",
+      "forecastsCorrect": 0,
+      "forecastsTotal": 24,
+      "pairedCorrect": 0,
+      "pairedTotal": 11,
+      "reportHash": "1db8f3aaa4e7d2c32a7153d0176c9e72251fc353ce997b976749bbdd4e189da2"
+    }
+  ]
+}

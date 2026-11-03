@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111315">
+  <meta name="description" content="Can a model learn the dynamics of an unfamiliar system well enough to predict an unseen future? Explore Turnstile's current temporal reasoning workbench.">
+  <title>Turnstile — Benchmark workbench</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23111315'/%3E%3Cpath d='M8 7h16v5H13v8h11v5H8z' fill='%23b9ef76'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/benchmark.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to benchmark</a>
+  <header class="site-header">
+    <a class="wordmark" href="/" aria-label="Turnstile benchmark home">TURNSTILE<span aria-hidden="true">↔</span></a>
+    <nav aria-label="Site"><a href="/">Overview</a><span aria-current="page">Workbench <small>0.5</small></span><a href="/demo.html">Legacy experiments <span aria-hidden="true">↗</span></a></nav>
+    <span class="local-badge"><i></i>LOCAL WORKBENCH</span>
+  </header>
+  <main id="main">
+    <section class="intro">
+      <p class="eyebrow">THE TURNSTILE QUESTION</p>
+      <h1>Can a model learn the dynamics of an unfamiliar system well enough to predict an unseen future?</h1>
+      <p class="lede">A model-neutral project about learning how unfamiliar systems change over time, then testing that understanding on what happens next.</p>
+      <ol class="research-flow" aria-label="Project direction">
+        <li><span class="flow-number">01</span><div><h2>Observe</h2><p>Watch a system evolve.</p></div></li>
+        <li><span class="flow-number">02</span><div><h2>Learn</h2><p>Infer its dynamics from experience.</p></div></li>
+        <li><span class="flow-number">03</span><div><h2>Predict</h2><p>Forecast an unseen continuation.</p></div></li>
+      </ol>
+    </section>
+    <section class="current-scope" aria-labelledby="current-scope-title">
+      <p class="eyebrow">AVAILABLE NOW / v0.5</p>
+      <h2 id="current-scope-title">Learn delayed dynamics. Predict a fresh run.</h2>
+      <p>Observe three calibration runs of an unfamiliar deterministic system, infer how its delayed updates work, then answer six questions about one fresh run before their outcomes are shown. A provided-rule control separates learning a mechanism from applying it. This is one public development task, not a held-out study or a model ranking.</p>
+    </section>
+    <form id="benchmark-form" class="setup" aria-label="Benchmark setup" novalidate>
+      <fieldset id="setup-fields" disabled>
+        <legend class="sr-only">Choose benchmark tasks and policies</legend>
+        <div class="primary-controls">
+          <label>Suite<select id="suite" name="suite"><option value="dynamics">Dynamics learning</option><option value="temporal">Foundational state tracking</option></select></label>
+          <label>Task<select id="task" name="task"><option value="">All tasks</option></select></label>
+          <label>Agent<select id="policy" name="policyKind"><option value="reference">Offline reference</option></select></label>
+          <button type="submit" class="primary" id="run">Run benchmark <span aria-hidden="true">↗</span></button>
+        </div>
+        <p id="policy-note" class="helper">Loading server configuration…</p>
+        <details class="settings">
+          <summary>Advanced settings &amp; controls <span id="settings-summary">Seed 42 · 1 seed · 1 attempt</span></summary>
+          <div class="settings-grid">
+            <label id="split-field">Task split<select id="split" name="split"><option value="development">Development</option><option value="evaluation">Evaluation</option><option value="all">All public tasks</option></select><small id="split-note">Dynamics currently has one public development task</small></label>
+            <label id="rule-access-field">Mechanism access<select id="rule-access" name="ruleAccess"><option value="infer">Infer from calibration runs</option><option value="given">Provided-rule control</option></select><small>The control supplies the system's mechanism</small></label>
+            <label>Starting seed<input id="seed" name="seed" type="number" value="42" min="0" max="2147483647" step="1" required></label>
+            <label>Number of seeds<input id="seeds" name="seedCount" type="number" value="1" min="1" max="50" step="1" required><small id="seed-limit">Up to 50 offline seeds</small></label>
+            <label id="attempts-field">Maximum attempts<select id="attempts" name="attempts"><option value="1" selected>1 — unassisted only</option><option value="2">2 attempts</option><option value="3">3 attempts</option><option value="4">4 attempts</option><option value="5">5 attempts</option></select><small>Foundation-suite recovery is scored separately</small></label>
+            <label>Timing variant<select id="variant" name="variant"><option value="base">Base timing</option><option value="temporal_shift">Changed timing</option></select><small>At least one correct answer changes</small></label>
+            <label>Distractor observations<select id="interference" name="interference"><option value="0">0 — no added distractors</option><option value="1">1 per automatic step</option><option value="2">2 per automatic step</option><option value="3">3 per automatic step</option></select><small>Task decisions and correct outcomes stay fixed</small></label>
+            <label id="budget-field">Replay budget per round<input id="budget" name="analysisBudget" type="number" value="24" min="0" max="100" step="1" required><small>Foundation-suite evaluator replays</small></label>
+            <label id="model-field" hidden>Model override<input id="model" name="model" placeholder="Use server model" maxlength="120" autocomplete="off"><small>Credentials stay on the server</small></label>
+          </div>
+          <fieldset id="strategies-field" class="strategies"><legend>Unassisted baseline and optional recovery strategies</legend><div id="strategy-options"></div></fieldset>
+          <p id="suite-note" class="fine">Dynamics scores predictions only. This release permits one unassisted attempt; observing a resolved outcome and retrying it would not test an unseen future.</p>
+          <div class="validation-launch"><button type="button" id="validate" class="secondary">Run matched validation</button><p id="validation-note" class="fine">Four fixed dynamics conditions cross base/changed timing with inferred/provided rules. Uses seeds and model above; individual task, variant and mechanism controls are ignored. Maximum ten offline or three model seeds.</p></div>
+        </details>
+      </fieldset>
+      <div id="run-status" role="status" aria-live="polite" class="run-status">Connecting to the local server…</div>
+      <button id="cancel" class="secondary" type="button" hidden>Cancel run</button>
+      <p id="error" role="alert" class="error" hidden></p>
+    </form>
+    <div class="import-toolbar"><label class="import-button" for="import-report">Open saved JSON report<input id="import-report" type="file" accept="application/json,.json"></label><p class="fine">Reads a local report into this page. No upload or model call.</p></div>
+    <section id="results" hidden aria-labelledby="results-title">
+      <div class="section-heading"><div><p class="eyebrow">RESULTS</p><h2 id="results-title" tabindex="-1">Benchmark report</h2><p id="report-context" class="muted"></p></div><button type="button" id="export" class="secondary">Export JSON <span aria-hidden="true">↓</span></button></div>
+      <div id="report-note" class="notice"></div>
+      <div id="validation-summary" hidden></div>
+      <label id="condition-field" class="score-filter" hidden>Validation condition<select id="condition-select"></select></label>
+      <div id="score-table"></div>
+      <div id="costs" class="cost-grid"></div>
+      <section class="inspector" aria-labelledby="inspect-title">
+        <div class="section-heading"><div><p class="eyebrow">INSPECT THE EVIDENCE</p><h2 id="inspect-title">From observation to outcome</h2></div></div>
+        <div class="inspect-controls">
+          <label>Task &amp; seed<select id="case-select"></select></label>
+          <label>Strategy<select id="strategy-select"></select></label>
+          <label>Attempt<select id="attempt-select"></select></label>
+        </div>
+        <div id="task-brief"></div>
+        <div id="attempt-outcome"></div>
+        <div id="timeline" class="timeline" role="group" aria-label="Choose a checkpoint"></div>
+        <div id="step-detail"></div>
+        <div id="gate-checks"></div>
+        <div id="analysis-detail"></div>
+      </section>
+      <details class="report-details"><summary>Protocol, limits &amp; reproducibility</summary><div id="protocol-detail"></div></details>
+    </section>
+    <section id="empty" class="empty-state"><div aria-hidden="true" class="empty-diagram"><span>SEE</span><i></i><span>→</span><i></i><span>TRY</span></div><h2>Calibration first. Unseen predictions next.</h2><p>Run the dynamics task, inspect the observed examples and fresh prediction queries, or compare inferred and provided mechanisms in matched validation. Foundational state-tracking tasks remain available in the suite selector.</p><p class="fine">Offline reference policies verify the current runner. Their scores do not measure model ability.</p></section>
+    <details class="about"><summary>What the current workbench measures</summary><div class="about-grid"><div><h3>Learn from observations</h3><p>Three completed calibration runs expose a system's behavior. The actor infers its hidden delay and response to repeated inputs. The provided-rule control supplies the mechanism directly.</p></div><div><h3>Predict fresh outcomes</h3><p>Six categorical predictions concern one fresh run. Calibration is not scored. Prediction accuracy and all-query success are scored by the simulator; future outcomes stay hidden until the attempt finishes.</p></div><div><h3>Keep comparisons explicit</h3><p>Matched conditions vary timing and mechanism access. The foundational temporal suite retains historical-state queries and optional fresh retry, trace memory, reflection and pincer recovery.</p></div></div><p class="fine">This first dynamics release has one public development template and permits one unassisted attempt. It does not yet evaluate pincer or reflection as dynamics-learning strategies, probabilistic forecasts, real-world transfer or checkable past explanations. Past diagnosis remains a secondary project diagnostic. Reference scores verify the harness, not model ability. All suites are experimental; no novelty, model ranking or strategy advantage is assumed.</p></details>
+    <footer><span>TURNSTILE / MODEL-NEUTRAL TEMPORAL REASONING</span><a href="/demo.html">Legacy experiments ↗</a></footer>
+  </main>
+  <script type="module" src="/benchmark-app.js"></script>
+</body>
+</html>

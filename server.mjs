@@ -4,11 +4,15 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 import * as engine from './engine/index.js';
 import { createModelPolicy, DEFAULT_MODEL, ModelError } from './model.mjs';
+import { runBenchmark, validateBenchmarkOptions, ACTIVE_TASKS, LEGACY_TASKS, STRATEGIES, BENCHMARK_VERSION } from './benchmark/index.mjs';
+import { runValidation, validateValidationOptions } from './benchmark/validation.mjs';
+import { runMatchedDynamics, validateMatchedOptions } from './benchmark/matched-dynamics.mjs';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const MAX_BODY_BYTES = 16 * 1024;
 const MODE_ALIASES = { forward: 'forward_only', pincer: 'temporal_pincer' };
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]']);
+const publicModelId = value => typeof value === 'string' && /^[A-Za-z0-9._:/-]{1,120}$/.test(value) && !value.includes('://') ? value : null;
 
 export class InputError extends Error {
   constructor(message, status = 400, code = 'INVALID_REQUEST') { super(message); this.status = status; this.code = code; }
@@ -16,7 +20,23 @@ export class InputError extends Error {
 
 export function config() {
   return {
-    name: 'Turnstile', version: '0.1.0', scenarios: engine.SCENARIOS, modes: engine.MODES,
+    name: 'Turnstile', version: BENCHMARK_VERSION, scenarios: engine.SCENARIOS, modes: engine.MODES,
+    benchmark: {
+      tasks: ACTIVE_TASKS, legacyTasks: LEGACY_TASKS, strategies: STRATEGIES, endpoint: '/api/evaluate',
+      version: BENCHMARK_VERSION, schemaVersion: 4, automaticSingletonActions: true,
+      suites: ['dynamics', 'temporal', 'legacy'], defaultSuite: 'dynamics', variants: ['base', 'temporal_shift'], ruleAccessModes: ['infer', 'given'],
+      suiteDefaults: {
+        dynamics: { attempts: 1, strategies: ['forward_only'], splits: ['development'], supportsRecovery: false },
+        temporal: { attempts: 1, strategies: ['forward_only'], splits: ['development', 'evaluation', 'all'], supportsRecovery: true },
+      },
+      limits: { attempts: 5, referenceSeeds: 50, modelSeeds: 3, delay: 7, analysisBudget: 100, interference: 3 },
+      splits: ['development', 'evaluation', 'all'], stateModes: ['temporal', 'updates'], validationEndpoint: '/api/validate',
+      policyKinds: [
+        { id: 'reference', label: 'Offline reference policy', available: true, model: null, description: 'Public-evidence exact learner for dynamics; deterministic fixtures for historical tasks. No model calls.' },
+        { id: 'openai', label: 'Hosted OpenAI model', available: Boolean(process.env.OPENAI_API_KEY), model: publicModelId(DEFAULT_MODEL), description: 'Uses server-configured credentials. Requests may incur API charges.' },
+        { id: 'compatible', label: 'Compatible local or hosted model', available: Boolean(process.env.TURNSTILE_BASE_URL && process.env.TURNSTILE_MODEL), model: publicModelId(process.env.TURNSTILE_MODEL), description: 'Uses the compatible endpoint configured on the server. Hosted requests may incur charges.' },
+      ],
+    },
     modelAvailable: Boolean(process.env.OPENAI_API_KEY), model: DEFAULT_MODEL,
     policyKinds: [
       { id: 'reference', label: 'Deterministic reference policies', description: 'Offline mechanism demonstration; no language-model calls.' },
@@ -33,6 +53,12 @@ const boundedInteger = (value, name, min, max, fallback) => {
 };
 
 export function validateOptions(input, operation = 'compare') {
+  if (['evaluate', 'validate', 'matched'].includes(operation)) {
+    if (input?.policyKind === 'custom') throw new InputError('Custom policies are supported only through the JavaScript interface.');
+    const validate = { evaluate: validateBenchmarkOptions, validate: validateValidationOptions, matched: validateMatchedOptions }[operation];
+    try { return validate(input); }
+    catch (error) { throw new InputError(error.message); }
+  }
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new InputError('Provide a JSON object with experiment options.');
   const allowed = new Set(['scenarioId', 'scenario', 'seed', 'attempts', 'mode', 'policyKind', 'model', 'analysisBudget', 'seedCount', 'seeds']);
   for (const key of Object.keys(input)) if (!allowed.has(key)) throw new InputError(`Unknown experiment option: ${key}.`);
@@ -64,11 +90,17 @@ export function validateOptions(input, operation = 'compare') {
 
 export async function execute(operation, input, { signal } = {}) {
   const options = validateOptions(input, operation);
-  const policy = options.policyKind === 'openai' ? createModelPolicy({
-    model: options.model || DEFAULT_MODEL, signal,
-    maxOutputTokens: environmentInteger('OPENAI_MAX_OUTPUT_TOKENS', 1200, 256, 8192),
-    maxCalls: environmentInteger('OPENAI_MAX_CALLS', 300, 1, 1000),
+  const policy = ['openai', 'compatible'].includes(options.policyKind) ? createModelPolicy({
+    provider: options.policyKind, model: options.model || (options.policyKind === 'openai' ? DEFAULT_MODEL : process.env.TURNSTILE_MODEL), signal,
+    ...(options.policyKind === 'compatible' ? { format: process.env.TURNSTILE_FORMAT || 'json_schema' } : {}),
+    maxOutputTokens: environmentInteger(options.policyKind === 'openai' ? 'OPENAI_MAX_OUTPUT_TOKENS' : 'TURNSTILE_MAX_OUTPUT_TOKENS', 1200, 256, 8192),
+    maxCalls: environmentInteger(options.policyKind === 'openai' ? 'OPENAI_MAX_CALLS' : 'TURNSTILE_MAX_CALLS', 300, 1, 1000),
   }) : undefined;
+  if (operation === 'evaluate') {
+    return runBenchmark(options, { policy, signal });
+  }
+  if (operation === 'validate') return runValidation(options, { policy, signal });
+  if (operation === 'matched') return runMatchedDynamics(options, { policy, signal });
   const runOptions = { ...options, ...(policy ? { policy } : {}) };
   let result;
   if (operation === 'benchmark') {
@@ -164,7 +196,9 @@ async function serveStatic(urlPath, response, headOnly) {
   const relative = pathname.startsWith('/engine/') ? pathname.slice('/engine/'.length) : pathname === '/' ? 'index.html' : pathname.slice(1);
   const file = path.resolve(targetRoot, relative);
   if (!file.startsWith(`${targetRoot}${path.sep}`)) throw new InputError('File not found.', 404, 'NOT_FOUND');
-  const type = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon' }[path.extname(file)];
+  const isPilotScore = path.dirname(file) === publicRoot && ['pilot-scores.json', 'pilot-hard-scores.json'].includes(path.basename(file));
+  const type = isPilotScore ? 'application/json; charset=utf-8'
+    : { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon' }[path.extname(file)];
   if (!type || (targetRoot.endsWith(`${path.sep}engine`) && !['.js', '.mjs'].includes(path.extname(file)))) throw new InputError('File not found.', 404, 'NOT_FOUND');
   let body;
   try { body = await readFile(file); }
@@ -183,7 +217,7 @@ export function createServer() {
       validateLocalRequest(request);
       const pathname = new URL(request.url, 'http://localhost').pathname;
       if (pathname === '/api/config' && request.method === 'GET') return sendJSON(response, 200, config());
-      const operation = { '/api/run': 'run', '/api/compare': 'compare', '/api/benchmark': 'benchmark' }[pathname];
+      const operation = { '/api/run': 'run', '/api/compare': 'compare', '/api/benchmark': 'benchmark', '/api/evaluate': 'evaluate', '/api/validate': 'validate' }[pathname];
       if (operation) {
         if (request.method !== 'POST') throw new InputError('Use POST for this endpoint.', 405, 'METHOD');
         if (busy) throw new InputError('An experiment is already running. Wait for it to finish.', 409, 'BUSY');

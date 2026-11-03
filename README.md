@@ -1,99 +1,97 @@
 # Turnstile
 
-Turnstile is a local experiment workbench for temporal-pincer agent systems. A forward agent completes a software-release planning task, a second process diagnoses its completed trajectory, and a fresh forward attempt receives information learned from that earlier attempt.
+**Can a model learn the dynamics of an unfamiliar system well enough to predict an unseen future?**
 
-The first vertical slice is a bounded engineering environment: a webhook-service release and an account-identifier migration. Each has eight early design decisions followed by build, staging, smoke tests, and delayed integration gates. A healthy pilot can hide an event-loss bug, a tenant-identity collision, a compatibility break, or an unsafe rollback. The environment records actions, observations, artifact provenance, costs, and outcomes, allowing a late failure to be connected to an earlier decision.
+Turnstile is a model-neutral experimental benchmark: **Observe → Learn → Predict**. Its first executable dynamics-learning task is available in **v0.5.0**. A model observes three calibration runs, infers a hidden delay and repeated-input behavior, and commits six categorical predictions about one fresh run before seeing their outcomes. A provided-rule control separates learning a mechanism from applying it. Checkable past explanations remain secondary diagnostics; they are not required for prediction credit.
 
-This is a simulated software-release environment with structured tool actions. It does not edit a real repository, deploy a service, or run a physical robot.
+The default suite starts with **one public development template**. The matched CLI pilot adds a harder coupled-process task. Offline reference learners use public evidence to validate the harness. Evidence for model ability requires model runs across cases. See [PROJECT_DIRECTION.md](PROJECT_DIRECTION.md) and [RELATED_WORK.md](RELATED_WORK.md).
 
-## Run locally
+## Run offline
 
-Use Node.js 22 or later. There are no npm dependencies and no installation step.
-
-```powershell
-cd turnstile
-npm start
-```
-
-Open [the local workbench](http://127.0.0.1:4173). It binds to `127.0.0.1`; use `PORT` to select another local port. The browser workbench supports paired comparisons, trajectory inspection, evidence cards, multiple-seed batches, and JSON export. System fonts keep the interface usable offline; the browser can load Google Fonts when available.
+Use **Node.js 22 or later**. There are no external runtime dependencies or installation step.
 
 ```powershell
 npm test
-node cli.mjs scenarios
-node cli.mjs compare --scenario webhook_release --seed 42 --attempts 2
-node cli.mjs run --scenario database_migration --mode temporal_pincer --seed 42 --attempts 2
-node cli.mjs compare --scenario webhook_release --seed 42 --attempts 2 --seeds 10 --output results.json
-```
-
-`--seeds 10` runs ten paired comparisons using consecutive seeds beginning at `--seed`. The `benchmark` command is equivalent. `--output` saves full traces and aggregate results, and refuses to overwrite an existing result file. Use a new filename for another run. Reference runs are reproducible given the same options and code. A seed controls environment conditions; it does not make live model calls deterministic.
-
-## Three conditions
-
-| Condition | Analysis | Information on the next attempt |
-| --- | --- | --- |
-| `forward_only` | None | Fresh start; no previous-run feedback |
-| `reflection` | Ordinary complete-trajectory criticism | All verified repair notes available at attempt start |
-| `temporal_pincer` | Backward traversal from observed outcome toward earlier decisions | Verified notes delivered at matching decision checkpoints |
-
-A comparison executes one first forward attempt and shares that exact source trajectory across all three conditions. All retries reset the same scenario and seed. Both analysts get the same observable completed trajectory, the same allowed intervention format, and the same replay budget. An ordinary critic is allowed to discover the same delayed causal relationships as the backward analyst. A tie is a valid result.
-
-Reference mode uses **deterministic reference policies**, including a handwritten preference for low immediate cost and instrumented evidence analysis. These are not language-model agents. This mode demonstrates recording, diagnosis, counterfactual replay, and timed delivery; its scores cannot establish that backward reasoning improves AI performance. The interface and result metadata distinguish it from live model mode.
-
-## Optional live model agents
-
-Live mode uses separate structured model calls for forward decisions, ordinary criticism, and backward analysis. The backward analyst receives the same completed evidence in reverse order; its instruction asks it to connect late observations to earlier decisions. Recommendations are still validated by the environment before delivery. Failures, refusals, and incomplete responses stop the experiment instead of silently switching to reference policies.
-
-Set credentials in the server's environment, then restart it. Never put a key in the browser or a saved result.
-
-```powershell
-$env:OPENAI_API_KEY = '<your API key>'
-$env:OPENAI_MODEL = 'gpt-4.1-mini'
+node cli.mjs tasks
+node cli.mjs evaluate --seed 42 --output results-dynamics.json
+node cli.mjs evaluate --task delayed_commit --rule-access given --output results-given.json
+node cli.mjs validate --seeds 3 --output results-dynamics-controls.json
+node cli.mjs matched --output results-matched.json
+node cli.mjs matched --task coupled_commit --output results-coupled.json
 npm start
 ```
 
-Select **Live model agents** in the workbench, or use the CLI:
+Open the [Turnstile overview](http://127.0.0.1:4173) for a worked example and the model pilot. The [local workbench](http://127.0.0.1:4173/workbench.html) opens with dynamics learning and an offline reference policy. Choose an agent and run the benchmark to inspect the three unscored examples and six scored forecasts. Advanced settings include seeds, timing, distractors and rule access. **Run matched validation** crosses base and changed timing with inferred and supplied rules in four fixed conditions.
+
+No model call starts automatically. This release permits only one attempt and `forward_only` in the dynamics suite: retrying an already resolved future would not test unseen prediction. Pincer, reflection and trace-memory recovery remain available in the foundational temporal and legacy suites; they are not implemented dynamics-learning strategies in v0.5.
+
+## What the dynamics task tests
+
+`delayed_commit`, family `dynamics_learning`, asks the actor to infer a deterministic system from observed runs. Its hidden mechanism determines the delay before a queued update commits and how additional input affects a pending update. The six predictions share one fresh run with new event timing/composition, so they are not independent trials. Calibration evidence identifies the mechanism within the declared hypothesis family; future query outcomes and evaluator answers remain outside actor and analyst contexts.
+
+The primary score is **unseen-future prediction accuracy**, the fraction of six categorical queries answered correctly. Task success requires all six. Calibration observations earn no score. Predictions are not corrected during the attempt; scoring occurs after completion. Errors retain partial traces and null scores, with explicit coverage and no reference fallback.
+
+`--rule-access infer` is the default; `given` supplies the mechanism as a control. `--variant temporal_shift` changes forecast timing, requiring at least one different correct answer. The four-condition matrix has `base_infer`, `shifted_infer`, `base_given` and `shifted_given`. Timing sensitivity on the first horizon is a secondary control and can be solved without learning the mechanism. All six forecast queries form the primary learning score. Provided-rule contrasts are descriptive, paired by seed, with incomplete-pair and error coverage retained. They do not establish significance or isolate a model's internal reasoning process.
+
+There is no separate dynamics evaluation split yet. More independent mechanisms, held-out structures, simple baseline comparisons and repeated model trials are needed before stronger claims. Deterministic categorical prediction is not calibrated probabilistic forecasting, learning model weights, or real-world forecasting.
+
+## Matched-mechanism pilot
+
+`node cli.mjs matched` runs eight public development pairs for `delayed_commit`. Add `--task coupled_commit` to forecast the joint state of two interacting delayed processes. The two cases in each pair share their calibration input schedules, future input plan and forecast horizons. Their hidden rules differ, producing different calibration observations and different correct forecasts. **Paired accuracy** awards credit at an answer-changing horizon only when both forecasts are correct. The report also shows ordinary forecast accuracy and how many pairs and queries were complete.
+
+The default offline run includes inferred-rule, supplied-rule and calibration-ablated conditions alongside a fixed-state baseline. The ablation hides observed states and grades predictions against the same realized futures, so it measures performance with missing evidence. Use `--condition infer|given|ablated` to select one condition plus the baseline. Use `--pairs 1,5` to run only those two pairs. With a live model, two pairs across all three conditions can make up to 72 requests. The matched tasks run through the CLI and use the same model configuration described below. See [BENCHMARK.md](BENCHMARK.md#matched-mechanism-pilot) for the scoring contract.
+
+## Connect a model
+
+The shared structured interface supports hosted Responses APIs, hosted/local OpenAI-compatible Chat Completions servers, and custom JavaScript clients. Set endpoint and credentials in the server process environment; the app does not load `.env` files automatically. Credentials never belong in browser inputs or reports.
 
 ```powershell
-node cli.mjs compare --policy openai --model gpt-4.1-mini --attempts 2 --output live-result.json
+$env:TURNSTILE_BASE_URL = 'http://127.0.0.1:1234/v1'
+$env:TURNSTILE_MODEL = '<loaded-model-id>'
+node cli.mjs evaluate --policy compatible --task delayed_commit --output results-local.json
 ```
 
-`OPENAI_MODEL` supplies the default; `--model` overrides it. The example model is a configurable starting point, not a claim about the latest or best model. Your account must have access to a model supporting the Responses API and structured outputs. The adapter uses server-side `fetch`, `store: false`, strict JSON schemas, per-call timeouts, and explicit action validation. Its request structure follows [official text-generation documentation](https://developers.openai.com/api/docs/guides/text) and [official structured-output documentation](https://developers.openai.com/api/docs/guides/structured-outputs).
+Hosted compatible servers use HTTPS `TURNSTILE_BASE_URL` and their `TURNSTILE_API_KEY`; keyless local servers may omit a key. `TURNSTILE_FORMAT` accepts `json_schema`, `json_object` or `text`, with mandatory local validation. Responses uses `OPENAI_API_KEY` and optional `OPENAI_MODEL` with `--policy openai`. Restart the local server after configuration to expose the provider in the workbench. The browser accepts a model override, never keys or endpoint URLs.
 
-Live runs send their public scenario, observations, and trajectories to the model provider and incur API charges. A 16-step attempt can issue a decision call per step; comparisons add analyst calls and retries. The exported `modelUsage` records actual request counts and input/output tokens across the physical comparison. It does not estimate dollars or promise success. Start with one seed and two attempts. Use your provider account's spending controls.
+Model commands and Run on a configured provider initiate calls and can incur charges. Tests use mocks and offline policies. A local Llama 3 8B run scored 4/6 on one `delayed_commit` case. The [matched-mechanism pilot](BENCHMARK.md#evidence-and-limits) reports separate results from hosted models. The old paid-pilot script is archived and refuses against this checkout.
 
-| Setting | Default | Purpose |
-| --- | --- | --- |
-| `PORT` | `4173` | Local web-server port |
-| `OPENAI_MODEL` | `gpt-4.1-mini` | Live model identifier |
-| `OPENAI_MAX_CALLS` | `300` | Hard model-request limit across an API/CLI operation |
-| `OPENAI_MAX_OUTPUT_TOKENS` | `1200` | Equal per-call output limit, including both analysts |
+## Foundational temporal suite
 
-The maximum is five forward attempts per condition, fifty reference seeds, or three live seeds. An API key enables live mode; reference mode makes no model calls. `.env` files are ignored by Git; the app does not automatically load them. Configure environment variables explicitly or use Node's own environment-file option. The web server rejects cross-origin requests and runs one experiment at a time.
+The v0.4 state-reconstruction tasks remain explicitly available under `suite: temporal`, also selectable in the workbench:
 
-## Evidence and future-information boundaries
+```powershell
+node cli.mjs evaluate --suite temporal --task temporal_history --output results-history.json
+node cli.mjs evaluate --suite temporal --split evaluation --task temporal_revision --output results-revision.json
+node cli.mjs validate --suite temporal --output results-temporal-controls.json
+node cli.mjs evaluate --suite temporal --task temporal_history --attempts 2 --strategies forward_only,trace_memory,reflection,temporal_pincer --analysis-budget 4 --output results-recovery.json
+```
 
-The acting agent gets current observations, its own history, and assistance allowed by its condition. Hidden environment constraints and evaluator success rules stay outside model context. Analysts only read a **completed earlier attempt**. No first attempt receives information from its own future.
+These published-rule tasks distinguish effective time from received knowledge, late updates and retractions. Their four-condition validation crosses base/changed timestamps with clean/distracted evidence. Paired temporal accuracy requires both answers correct on required answer flips. Keep these foundational measurements separate from dynamics learning.
 
-Late test output can name an affected artifact, allowing the analyst to propose an earlier change. Evaluator provenance is labeled as instrumentation. The evaluator replays the observed action sequence with one changed decision and holds scenario conditions fixed; it records whether that isolated intervention improves the outcome. These replay results establish a dependency only within this simulated environment. Replay is evaluation instrumentation and is charged separately from forward execution. Do not interpret replay knowledge as an independently discovered model insight.
+Same-instance recovery remains a separate historical experiment. Reflection/pincer receive the same completed evidence and replay budget; pincer notes arrive only at matching checkpoints on later attempts. Fixed-seed replay changes one decision while holding the rest fixed, preserving rejected proposals. A local repair need not produce whole-task success. Traversal order and delivery timing remain confounded; a tie is valid.
 
-The same visible trace and bounded counterfactual replay process support both reflection and temporal assistance. Targeted notes are delivered only at their original semantic decision checkpoint. Source evidence, diagnosis, proposed intervention, replay validation, and actual hint delivery can be inspected separately. A useful diagnosis does not imply that the forward agent followed it or succeeded.
+## Legacy experiments
 
-## Reading results honestly
+The six earlier planning/state/reservation tasks remain under `suite: legacy`; legacy validation retains its eight-condition matrix. The [legacy simulator workbench](http://127.0.0.1:4173/demo.html), original `compare`, old `benchmark` command and `/api/benchmark` retain their meanings.
 
-The main outcomes are final release success, attempts to success, decision-to-detection delay, action effort, counterfactual replay effort, and intervention delivery. Aggregate comparisons report paired seed success rates and costs; they do not attach unsupported significance or generalization claims. Abstract engineering effort is not money or model tokens.
+```powershell
+node cli.mjs evaluate --suite legacy --task temporal_release --output results-legacy.json
+node cli.mjs validate --suite legacy --strategies forward_only --output results-legacy-controls.json
+node cli.mjs compare --scenario webhook_release --seed 42 --attempts 2
+```
 
-The first version deliberately isolates a small, auditable mechanism. Its structured action space and early-decision ordering are much simpler than a coding agent's open-ended tools. The reference policy's fresh forward-only retry has no memory; a stronger baseline retaining its complete previous trace remains future work. Forward-only uses less analysis compute, so the three-condition comparison does not fully match total compute. Reflection and temporal-pincer analysis limits match, but actual token use can differ. The main conditions also combine analysis order with delivery timing, so they do not determine which factor caused an improvement.
+[VALIDATION_REPORT.md](VALIDATION_REPORT.md) preserves the historical v0.3 pilot. [WORKBENCH.md](WORKBENCH.md) documents the original simulator. Do not pool protocols or relabel historical scores as dynamics-learning evidence.
 
-For research claims, add held-out scenarios, stronger memory and compute controls, repeated model trials, uncertainty estimates, and the delivery-timing/traversal ablations in [the research protocol](RESEARCH.md). A capable forward agent may succeed on its first attempt, and a capable ordinary critic may match the pincer agent. Both outcomes are informative.
+## Reports and interfaces
 
-## Extend the framework
+`evaluate` / `POST /api/evaluate` run tasks; `validate` / `POST /api/validate` run matched conditions. `GET /api/config` exposes safe metadata, provider availability and suite restrictions. JavaScript `runBenchmark` uses the same execution/grading path.
 
-- Replace the reference policy with another acting policy and analyst implementation through the engine's policy hooks.
-- Add release scenarios with new delayed dependencies, distractor observations, and negative controls.
-- Adapt the environment to disposable repository checkouts: immutable file edits, test output, full diffs, and clean reset between attempts.
-- Match hints to semantic tool operations or code symbols when trajectories can change order.
-- Add independent backward-traversal and start-versus-checkpoint-delivery conditions before moving to robotics simulations.
+```powershell
+Invoke-RestMethod -Uri http://127.0.0.1:4173/api/evaluate -Method Post -ContentType 'application/json' -Body '{"suite":"dynamics","taskId":"delayed_commit","seed":42,"ruleAccess":"infer","policyKind":"reference"}'
+```
 
-`engine/` contains the environment, reference policies, and experiment orchestration. `model.mjs` is the server-only model adapter. `server.mjs` exposes `GET /api/config`, `POST /api/run`, `POST /api/compare`, and `POST /api/benchmark`. `cli.mjs` uses the same validation and execution helpers as the browser. `public/` contains the local research workbench. Node's built-in test runner checks experiment semantics, information boundaries, model-response validation, and the local API.
+Benchmark schema **4** and dynamics-validation wrapper schema **3** record options, protocol, source/runtime/provider fingerprints, traces, errors, costs and hashes without secrets or wall-clock timestamps. Identical offline code/options/runtime produce identical JSON; task seeds do not make hosted responses deterministic. `--output` refuses overwrites, and generated reports/logs remain ignored by Git.
 
-API requests use `{scenarioId, seed, attempts, policyKind}`; single runs additionally accept `mode`, and batches accept `seedCount`. Optional `model` and `analysisBudget` customize live model selection and the replay limit. API errors are structured and sanitized. Secrets and server source files are not browser-accessible.
+The browser imports benchmark schemas 1–4 and validation wrappers 1–3 locally, without uploads or inference. Shape validation/escaped rendering do not certify report origin or independently verify its hash. Export before reload; cancellation retains the previous report. Forward execution, automatic steps, policy decisions, evaluator replay and model usage remain distinct costs.
+
+The server binds to loopback, checks Host/Origin, rejects browser credentials and endpoint overrides, and runs one experiment at a time. Read [BENCHMARK.md](BENCHMARK.md) for exact contracts, [RESEARCH.md](RESEARCH.md) for interpretation limits, and [CLOUD_HANDOFF.md](CLOUD_HANDOFF.md) for preserved work.

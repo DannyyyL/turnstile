@@ -3,43 +3,100 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#101114">
-  <meta name="description" content="Turnstile: an experimental workspace for forward and backward agent reasoning.">
-  <title>Turnstile — Temporal reasoning lab</title>
-  <link rel="stylesheet" href="/styles.css">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23131518'/%3E%3Cpath d='M9 8h14v4H13v5h10v4H9z' fill='%23b9f36b'/%3E%3Cpath d='M19 21v5h4V17h-4' fill='%23b9f36b'/%3E%3C/svg%3E">
+  <meta name="theme-color" content="#111315">
+  <meta name="description" content="Turnstile tests whether AI can learn how an unfamiliar system works and predict what happens next.">
+  <title>Turnstile — Can AI predict what happens next?</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23111315'/%3E%3Cpath d='M8 8h16v4h-6v12h-4V12H8z' fill='%23b9ef76'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/landing.css">
 </head>
 <body>
-  <div class="app-shell">
-    <aside class="sidebar">
-      <a class="brand" href="#experiment" aria-label="Turnstile home"><span class="brand-symbol" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M5 5h22v5H10v8h17v5H5z"/><path d="M22 18v10h5V13h-5"/></svg></span><span>turnstile<span class="brand-period">.</span></span></a>
-      <div class="workspace-label">TEMPORAL REASONING LAB <span>v0.1</span></div>
-      <nav aria-label="Workspace">
-        <button class="nav-item active" data-view="experiment"><span data-icon="experiment"></span>Experiment<span class="nav-key">01</span></button>
-        <button class="nav-item" data-view="trajectories"><span data-icon="trajectory"></span>Trajectories<span class="nav-key">02</span></button>
-        <button class="nav-item" data-view="comparison"><span data-icon="compare"></span>Comparison<span class="nav-key">03</span></button>
-        <button class="nav-item" data-view="protocol"><span data-icon="book"></span>Protocol<span class="nav-key">04</span></button>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="wordmark" href="/"><span class="mark" aria-hidden="true">↗</span> Turnstile</a>
+      <nav aria-label="Main">
+        <a href="#results">Results</a>
+        <a href="#example">Example</a>
+        <a class="workbench-link" href="/workbench.html">Workbench <span aria-hidden="true">↗</span></a>
       </nav>
-      <div class="sidebar-note"><span class="note-kicker">THE EXPERIMENT</span><p>What could an earlier agent learn from a later outcome?</p><div class="mini-directions"><span>t₀</span><div><i></i><i></i><i></i><i></i><i></i></div><span>tₙ</span></div></div>
-      <div class="sidebar-footer"><span data-icon="flask"></span><span>Local research workspace<br><small>Reproducible by seed</small></span></div>
-    </aside>
-    <div class="main-shell">
-      <header class="topbar"><div class="breadcrumbs">Workspace <span>/</span> <strong id="breadcrumb-view">Experiment</strong></div><div class="runtime-badge"><span class="runtime-dot"></span><span id="runtime-label">Reference policies</span><span class="badge-divider"></span>LOCAL</div></header>
-      <main id="main-content">
-        <section class="page-heading"><div><div class="eyebrow">FORWARD × BACKWARD</div><h1 id="page-title">A future worth revisiting.</h1><p id="page-description">Trace a release failure back to the decision that made it possible.</p></div><button class="button primary" id="run-button"><span data-icon="play"></span><span>Run experiment</span></button></section>
-        <div class="experiment-controls" id="experiment-controls">
-          <label class="control scenario-control"><span>ENVIRONMENT</span><select id="scenario-select" aria-label="Environment"><option value="webhook_release">Webhook release</option><option value="database_migration">Database migration</option></select></label>
-          <label class="control seed-control"><span>SEED</span><input id="seed-input" type="number" value="42" min="0" max="2147483647" step="1" aria-label="Experiment seed"></label>
-          <label class="control"><span>ATTEMPTS</span><select id="attempts-select" aria-label="Attempts"><option value="2">2 attempts</option><option value="3">3 attempts</option><option value="1">1 attempt</option></select></label>
-          <label class="control policy-control"><span>AGENT POLICY</span><select id="policy-select" aria-label="Agent policy"><option value="reference">Reference policy</option><option value="model" disabled>Live model · key required</option></select></label>
-          <button class="button subtle icon-button" id="export-button" title="Export experiment as JSON" aria-label="Export experiment as JSON" disabled><span data-icon="download"></span></button>
-        </div>
-        <div id="view-content" aria-live="polite"><div class="initial-state"><div class="loading-orbit"></div><h2>Preparing the experiment</h2><p>Building three trajectories from the same initial state.</p></div></div>
-        <footer class="page-footer"><span>TURNSTILE <span class="footer-slash">/</span> EXPERIMENTAL FRAMEWORK</span><span id="footer-policy">Simulated tools. Reproducible decisions. Observable evidence.</span></footer>
-      </main>
     </div>
-  </div>
-  <div id="toast" class="toast" role="status"></div>
-  <script type="module" src="/app.js"></script>
+  </header>
+  <main id="main" class="shell">
+    <section class="hero" aria-labelledby="question">
+      <p class="eyebrow"><span></span> An AI benchmark</p>
+      <h1 id="question">Can AI learn how a system works and <span>predict what happens next?</span></h1>
+      <p class="intro">Show an AI a few completed runs of an unfamiliar system. Then give it a new set of events and see if it can predict the outcome before it happens.</p>
+    </section>
+
+    <section id="results" class="section results" aria-labelledby="results-title">
+      <p class="eyebrow">01 / Results</p>
+      <h2 id="results-title">How models did</h2>
+      <div id="score-views" class="score-views" role="group" aria-label="Benchmark results" hidden>
+        <button type="button" data-score-view="original" aria-pressed="true">All models</button>
+        <button type="button" data-score-view="hard" aria-pressed="false">Harder follow-up</button>
+      </div>
+      <p id="score-intro" class="section-intro">Each model saw the same three practice runs per case and had to work out the hidden rule. This small pilot used four cases with six forecasts each.</p>
+      <figure class="score-figure">
+        <figcaption>
+          <strong>Forecast and paired accuracy</strong>
+          <span id="score-caption">Coupled timers pilot · rules inferred from examples</span>
+        </figcaption>
+        <p id="score-status" role="status">Loading pilot scores…</p>
+        <div id="score-plot" class="score-plot" hidden>
+          <div class="plot-viewport">
+            <svg xmlns="http://www.w3.org/2000/svg" class="plot-field" viewBox="0 0 1000 390" role="group" aria-labelledby="plot-title" aria-describedby="plot-desc"></svg>
+          </div>
+          <p id="score-baseline" class="plot-key"><span aria-hidden="true"></span><span id="score-baseline-label"></span></p>
+          <p class="plot-readout" aria-live="polite">
+            <span class="plot-readout-label">Selected result</span>
+            <strong class="plot-readout-models"></strong>
+            <span class="plot-readout-score"></span>
+          </p>
+          <p class="plot-note">The axes zoom in on the pilot scores. Models with the same scores share a marker. Select a marker to see the models and their exact results.</p>
+          <p class="plot-note" id="reasoning-note" hidden>* Includes a run with reasoning enabled. Select the marker or open the exact scores to see the effort setting.</p>
+        </div>
+        <details id="score-details" class="score-details" hidden>
+          <summary>Exact scores and paired checks</summary>
+          <table id="score-table">
+            <thead><tr><th scope="col">Model</th><th scope="col">Forecasts</th><th scope="col">Paired checks</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </details>
+      </figure>
+      <p class="annotation"><strong>Paired checks</strong> count how often a model gets both answers right when the same inputs lead to different outcomes under two rules. <span id="score-paired-note"></span></p>
+      <p id="score-annotation" class="annotation">These results cover two public test pairs. The reference solver using the examples scored 24/24. The original pilot runs used provider defaults or explicitly disabled extended reasoning.</p>
+    </section>
+
+    <section id="example" class="section" aria-labelledby="example-title">
+      <p class="eyebrow">02 / Example</p>
+      <h2 id="example-title">Two timers. One hidden rule.</h2>
+      <p class="section-intro">Each timer takes two seconds, and starting it again resets the countdown. When one finishes, it either starts the other timer or cancels it. In an earlier run, the model saw the left timer finish and the right timer either start counting down or stay idle.</p>
+      <div class="example-panel">
+        <div class="example-question">
+          <p class="eyebrow">A forecast from the pilot</p>
+          <h3>The right timer starts at 0 and restarts at 1. What’s happening at 3?</h3>
+          <p>Restarting gives the right timer two more seconds. It finishes at 3 and acts on the left timer, which was idle.</p>
+        </div>
+        <div class="example-outcomes">
+          <div><span class="rule-label">If the rule is “start”</span><strong>Left is counting down.<br>Right is finished.</strong></div>
+          <div><span class="rule-label">If the rule is “cancel”</span><strong>Left stays idle.<br>Right is finished.</strong></div>
+        </div>
+      </div>
+      <p class="annotation">The example uses a clock starting at zero. In the scored pair, these same events occur at times 70, 71, and 73.</p>
+    </section>
+
+    <section id="method" class="section" aria-labelledby="method-title">
+      <p class="eyebrow">03 / Method</p>
+      <h2 id="method-title">How the test works</h2>
+      <ol class="steps">
+        <li><h3>Observe</h3><p>The model sees what happened in three completed runs.</p></li>
+        <li><h3>Forecast</h3><p>It gets the starting conditions and planned events for a fresh run, then submits its predictions.</p></li>
+        <li><h3>Score</h3><p>The simulator checks each prediction against the outcome. A separate run supplies the rule to see how well the model applies it.</p></li>
+      </ol>
+      <a class="workbench-link" href="/workbench.html">Open the workbench <span aria-hidden="true">↗</span></a>
+    </section>
+  </main>
+  <footer class="shell site-footer"><span>Turnstile</span><span>Temporal reasoning benchmark</span></footer>
+  <script type="module" src="/landing.js"></script>
 </body>
 </html>

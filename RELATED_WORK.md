@@ -1,0 +1,55 @@
+# Temporal reasoning, backward inference, and forecasting
+
+Research note, 2026-11-02. This is a bounded review of primary papers and project documentation, plus an inspection of Turnstile v0.4. It records design recommendations; it does not change the executable benchmark or establish research novelty. No model experiments were run for this review.
+
+The user subsequently chose and refined the core question: **Can a model learn the dynamics of an unfamiliar system well enough to predict an unseen future?** Explaining the past is a secondary diagnostic. [PROJECT_DIRECTION.md](PROJECT_DIRECTION.md) records that accepted direction. The alternatives and refinements below remain related-work context, rather than a competing project charter.
+
+## What overlaps existing work
+
+| Work | Relevant coverage | Consequence for Turnstile |
+| --- | --- | --- |
+| [TimeBench](https://aclanthology.org/2024.acl-long.66.pdf) | Symbolic time, temporal commonsense, historical factual questions, temporal scope changes and counterfactual questions. | Temporal QA and changing temporal assumptions are established tasks. |
+| [Test of Time](https://arxiv.org/html/2406.09170v1) | Synthetic temporal graphs, validity intervals, at-time questions, ordering and controlled structures. | Synthetic generation and historical state lookup are established. |
+| [LongMemEval](https://arxiv.org/html/2410.10813v2) | Online ingestion of timestamped sessions, temporal reasoning, knowledge updates and abstention. Its formal evaluation asks questions after all sessions. | Online ingestion and knowledge revision alone do not distinguish Turnstile. |
+| [StreamBench](https://arxiv.org/html/2603.19250v2) | Streaming temporal QA and entity-state tracking. The checked setup orders document arrival chronologically and associates documents with their event timestamps. | A possible diagnostic distinction is independently manipulating arrival and effective time; streaming QA itself is occupied territory. |
+| [Zep/Graphiti](https://arxiv.org/html/2501.13956v1) | Separates event chronology from ingestion time and preserves validity/invalidation history. | Two-clock memory is an established architecture, not a new concept. |
+| [temporal-recall](https://github.com/Keyan-sm/temporal-recall#scope) | Exact-scored historical retrieval with shared retrieval across temporal-selection baselines. Its scope explicitly says valid time only; ingestion time and retroactive corrections are future work. | This is a specific checked distinction from Turnstile, not proof of a literature-wide gap. |
+| [MnemeBrain BMB](https://github.com/mnemebrain/mnemebrain-benchmark) | Belief revision, retractions, evidence chains, expiry and temporal updates. | Belief-maintenance benchmarking is established. |
+| [ForecastBench](https://forecastbench.org/about/) | Prospective probabilistic predictions about real unresolved events and time-series targets, followed by resolution and scoring. | Predicting the real future and waiting for outcomes is already a benchmark protocol. |
+| [ForecastBench-Sim](https://arxiv.org/html/2606.18686v1) | Fixed Freeciv reports, hidden continuations, multiple horizons, immediate resolution, Brier/CRPS scoring and paired intervention worlds. It also discusses repeated rollouts, sequential updates and counterfactual coherence. | Simulated-world forecasting, paired worlds and probability-oracle diagnostics should not be claimed as new directions by themselves. |
+
+Matched temporal contrasts also have prior art: [Vinoground](https://openreview.net/pdf?id=WAk6tf8VkQ) holds semantic elements fixed while changing temporal relations in video. A useful contribution could be an integrated, small diagnostic with clear failure attribution and evidence, even when its individual methods are established.
+
+Current Turnstile independently controls received and effective time, but every query's knowledge cutoff is the current checkpoint. A focused refinement is to ask, after newer evidence has arrived: **what was valid at T according to the evidence received by earlier cutoff K?** This would test contamination of historical knowledge snapshots by later corrections. It is a proposed refinement, not an established novelty claim.
+
+## What the current backward strategy establishes
+
+In `model.mjs`, temporal pincer reverses the serialized completed trajectory and instructs the analyst to work from later observations toward earlier decisions. The returned recommendations and rationales do not contain a validated predecessor walk. The offline reference policy assigns the same critic to `reflect` and `invert`. The original simulator separately implements an instrumented backward evidence walk; that algorithm trace is not evidence of a model's private reasoning process.
+
+The active v0.4 tasks grade state-query answers. Those answers do not cause later records to change. A failed check names its own query checkpoint, and replay verifies a replacement answer. Thus the current task measures reconstruction and error correction, not discovery of an earlier action that caused a later event. Pincer remains an optional strategy, not a required capability or an assumed advantage.
+
+Reverse presentation may be useful, but its benefit must be measured. A crossed experiment should vary chronological/reversed evidence and attempt-start/checkpoint delivery independently, with equal evidence, model settings and replay limits. Explicit backward instructions versus neutral instructions are another factor. Proposal ordering matters under bounded replay and should be controlled. Record actual analysis costs. Correct outputs or persuasive rationales alone cannot establish internal reasoning direction.
+
+A separate inverse-state task could supply a final state and categorical transitions, asking which earlier states are consistent with the evidence. Reversible transitions can identify a predecessor; an overwrite can destroy that information. Grade the full consistent-state set or accept underdetermination, rather than scoring against one secretly sampled history. A checked predecessor-set sequence is an observable solution artifact. Related prior work includes [Thinking Forward and Backward](https://arxiv.org/abs/2411.01790) and [TempoBench](https://arxiv.org/abs/2510.27544v3); backward inference and causal attribution themselves are established research areas.
+
+## The social-simulation project
+
+[MiroFish](https://github.com/666ghj/MiroFish) is a likely match for the described repository: source documents seed a knowledge graph and agent personas, agents interact in simulated social environments, and the system produces a prediction report. Its engine uses [OASIS](https://github.com/camel-ai/oasis), which simulates interactions on Twitter/Reddit-like platforms. The identification is tentative because the user did not supply the repository link.
+
+A convincing simulated conversation is not by itself evidence of accurate human-response prediction. To evaluate that claim, freeze a measurable forecast before a real launch or other event, then compare with independent observed outcomes. Another LLM's opinion about whether the simulated reaction sounds realistic cannot substitute for that outcome. A social simulator could be one forecasting strategy compared with a single model, simple baselines and other ensembles; it need not become Turnstile's environment or ground-truth generator.
+
+## A focused prediction extension
+
+The research question worth investigating is: **does a model use temporal evidence correctly when forecasting, and revise appropriately when new or corrected evidence arrives?** General forecasting is already well covered. A Turnstile extension would need to earn its usefulness through isolation and interpretable diagnostics, without assuming uniqueness.
+
+A minimal task could ask for the probability that a specified event occurs before a deadline, given a frozen evidence prefix. Vary relative timing, evidence delay or horizon while holding non-temporal facts fixed. Uniform clock translations and irrelevant observations should preserve the oracle distribution. In a controlled process, meaningful temporal perturbations should change the oracle probability by a declared amount. Do not require the realized outcome to flip: equally well-calibrated probabilistic forecasts can resolve alike or differently.
+
+For binary forecasts use Brier loss `(p - y)^2`, lower being better. For example, a 70% forecast scores 0.09 if the event occurs and 0.49 otherwise. Evaluate many forecasts; one unlikely outcome does not establish poor calibration. If the controlled process has known conditional probability q, expected excess Brier loss relative to the oracle is `(p - q)^2`. Report calibration with sample counts and uncertainty. For numerical forecasts, point error measures closeness of a point estimate; predictive distributions or quantiles require a proper distributional score. See [Gneiting and Raftery](https://doi.org/10.1198/016214506000001437) and [ForecastBench's scoring definition](https://arxiv.org/abs/2409.19839).
+
+Freeze issue time, information cutoff, evidence hash, target, deadline, resolution rule, probability, model settings and usage in an immutable forecast record. Later store the resolution separately with its source. Simulated continuations can resolve immediately after forecast submission. Real-world forecasts remain pending until their independently specified outcome is available. A date-filtered historical corpus does not remove knowledge already present in model parameters; retrospective tests need a separate interpretation from prospective tests.
+
+Keep evidence, cutoffs and targets matched across strategies. Include development-only base rates, persistence where applicable, a time-blind policy, a simple time-aware statistical policy, and an explicitly labelled oracle for controlled tasks. Report model errors, missing forecasts, unresolved cases and costs. Real-world forecasting also tests retrieval, domain knowledge and event selection, so its score cannot isolate temporality by itself.
+
+**Do not reuse same-instance recovery as forecasting.** Once reflection or pincer has seen an event's realized future, retrying that same resolved trajectory is no longer a forecast. Learning from completed episodes is legitimate only when evaluated on a fresh, unseen continuation or independent episode. Current recovery scores should retain their separate meaning.
+
+Accepted next direction: develop one small dynamics-learning diagnostic with observed calibration episodes and predictions on a fresh future, as specified in [PROJECT_DIRECTION.md](PROJECT_DIRECTION.md). Checkable past explanations can support diagnosis as separately scored secondary measurements. Earlier options involving historical knowledge cutoffs or evidence-delay forecasts remain possible supporting controls. Establish meaningful simple baselines before expanding the runner. Existing work means usefulness and careful measurement must motivate the design; the bounded review does not establish a unique capability gap.
