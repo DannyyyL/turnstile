@@ -158,7 +158,7 @@ Reflection versus pincer combines traversal order and delivery timing; total com
 
 ## Browser, CLI and API
 
-Start `npm start`, open [the workbench](http://127.0.0.1:4173), and choose Foundational state tracking in the suite selector. Then choose split, task and agent. Advanced settings expose seeds, timestamp variant, interference, attempts, replay budget and optional recovery strategies. Offline reference, one attempt and `forward_only` are the defaults. A configured provider may incur charges only after Run is selected; no experiment starts automatically. Credentials and endpoints are server environment settings, never browser fields.
+Start `npm start`, open [the workbench](http://127.0.0.1:4173/workbench.html), and choose Foundational state tracking in the suite selector. Then choose split, task and agent. Advanced settings expose seeds, timestamp variant, interference, attempts, replay budget and optional recovery strategies. Offline reference, one attempt and `forward_only` are the defaults. Select Run to start an experiment. A configured provider may charge for its calls. Configure credentials and endpoints through the server environment.
 
 Results separate first-attempt accuracy/success from final results and recovery. Inspect observations, answers, automatic/policy execution, notes and accepted/rejected replays. Validation adds condition selection, temporal-pair accuracy, descriptive deltas and coverage. Cancel retains the preceding report. Export before reload, or open saved JSON locally without uploading data or making a model call. Imports accept benchmark schemas 1–4 and validation wrappers 1–3. Import validates supported shapes and escapes text; it does not certify origin or verify a saved hash.
 
